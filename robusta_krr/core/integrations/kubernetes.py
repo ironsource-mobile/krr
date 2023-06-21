@@ -52,9 +52,9 @@ class ClusterLoader(Configurable):
             objects_tuple = await asyncio.gather(
 #                self._list_deployments(),
                 self._list_rollouts(),
-                self._list_all_statefulsets(),
-                self._list_all_daemon_set(),
-                self._list_all_jobs(),
+#                self._list_all_statefulsets(),
+#                self._list_all_daemon_set(),
+#                self._list_all_jobs(),
             )
 
         except Exception as e:
