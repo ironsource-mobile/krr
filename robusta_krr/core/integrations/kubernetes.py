@@ -20,6 +20,8 @@ from robusta_krr.core.models.objects import K8sObjectData, PodData
 from robusta_krr.core.models.result import ResourceAllocations
 from robusta_krr.utils.configurable import Configurable
 
+from .rollout import RolloutAppsV1Api
+
 
 class ClusterLoader(Configurable):
     def __init__(self, cluster: Optional[str], *args, **kwargs):
@@ -32,6 +34,7 @@ class ClusterLoader(Configurable):
             else None
         )
         self.apps = client.AppsV1Api(api_client=self.api_client)
+        self.rollout = RolloutAppsV1Api(api_client=self.api_client)
         self.batch = client.BatchV1Api(api_client=self.api_client)
         self.core = client.CoreV1Api(api_client=self.api_client)
 
@@ -47,11 +50,13 @@ class ClusterLoader(Configurable):
 
         try:
             objects_tuple = await asyncio.gather(
+#                self._list_deployments(),
                 self._list_rollouts(),
-                # self._list_all_statefulsets(),
-                # self._list_all_daemon_set(),
-                # self._list_all_jobs(),
+                self._list_all_statefulsets(),
+                self._list_all_daemon_set(),
+                self._list_all_jobs(),
             )
+
         except Exception as e:
             self.error(f"Error trying to list pods in cluster {self.cluster}: {e}")
             self.debug_exception()
@@ -126,6 +131,18 @@ class ClusterLoader(Configurable):
             ]
         )
 
+    async def _list_rollouts(self) -> list[K8sObjectData]:
+        ret: V1DeploymentList = await asyncio.to_thread(self.rollout.list_rollout_for_all_namespaces, watch=False)
+        self.debug(f"Found {len(ret.items)} rollouts in {self.cluster}")
+
+        return await asyncio.gather(
+            *[
+                self.__build_obj(item, container)
+                for item in ret.items
+                for container in item.spec.template.spec.containers
+            ]
+        )
+
     async def _list_all_statefulsets(self) -> list[K8sObjectData]:
         self.debug(f"Listing statefulsets in {self.cluster}")
         ret: V1StatefulSetList = await asyncio.to_thread(self.apps.list_stateful_set_for_all_namespaces, watch=False)
@@ -164,58 +181,6 @@ class ClusterLoader(Configurable):
                 for container in item.spec.template.spec.containers
             ]
         )
-
-    async def _list_rollouts(self) -> list[K8sObjectData]:
-        self.debug(f"Listing rollouts in {self.cluster}")
-
-        # Get all namespaces
-        namespaces = self.core.list_namespace().items
-
-        # Asynchronously fetch rollouts in each namespace
-        tasks = [
-            asyncio.to_thread(
-                self.apps.list_namespaced_custom_object,
-                group="argoproj.io",
-                version="v1alpha1",
-                namespace=namespace.metadata.name,
-                plural="rollouts"
-            )
-            for namespace in namespaces
-        ]
-        results = await asyncio.gather(*tasks)
-
-        rollouts = []
-        for result in results:
-            rollouts.extend(result.get("items", []))
-
-        self.debug(f"Found {len(rollouts)} rollouts in {self.cluster}")
-
-        return await asyncio.gather(
-            *[
-                self.__build_obj(item, container)
-                for item in rollouts
-                for container in item["spec"]["template"]["spec"]["containers"]
-            ]
-        )
-
-
-    # async def _list_rollouts(self):
-    #     self.debug(f"Listing rollouts in {self.cluster}")
-    #     rollouts = []
-
-    #     # List rollouts in all namespaces
-    #     namespaces = self.core.list_namespace().items
-    #     for namespace in namespaces:
-    #         rollouts_list = self.apps.list_namespaced_custom_object(
-    #             group="argoproj.io",
-    #             version="v1alpha1",
-    #             namespace=namespace.metadata.name,
-    #             plural="rollouts"
-    #         )
-    #         rollouts.extend(rollouts_list["items"])
-
-    #         self.debug(f"Found {len(rollouts)} rollouts in {self.cluster}")
-    #     return rollouts
 
     async def _list_pods(self) -> list[K8sObjectData]:
         """For future use, not supported yet."""
