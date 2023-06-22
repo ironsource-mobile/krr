@@ -32,6 +32,7 @@ class ResourceAllocations(pd.BaseModel):
 
     @staticmethod
     def __parse_resource_value(value: RecommendationValueRaw) -> RecommendationValue:
+        print(value)
         if value is None:
             return None
 
