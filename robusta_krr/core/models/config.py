@@ -19,7 +19,7 @@ class Config(pd.BaseSettings):
 
     # Value settings
     cpu_min_value: int = pd.Field(100, ge=0)  # in millicores
-    memory_min_value: int = pd.Field(105, ge=0)  # in megabytes
+    memory_min_value: int = pd.Field(100, ge=0)  # in megabytes
 
     # Prometheus Settings
     prometheus_url: Optional[str] = pd.Field(None)
