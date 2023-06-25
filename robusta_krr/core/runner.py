@@ -100,7 +100,7 @@ class Runner(Configurable):
             # NOTE: We use 1 as the minimal value for other resources
             prec_power = 1
 
-        rounded = max(math.ceil(value * prec_power) / prec_power, 0.1)
+        rounded = math.ceil(value * prec_power) / prec_power
 
         minimal = self.__get_resource_minimal(resource)
         return max(rounded, minimal)
