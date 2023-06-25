@@ -18,8 +18,8 @@ class Config(pd.BaseSettings):
     namespaces: Union[list[str], Literal["*"]] = pd.Field("*")
 
     # Value settings
-    cpu_min_value: int = pd.Field(5, ge=0)  # in millicores
-    memory_min_value: int = pd.Field(10, ge=0)  # in megabytes
+    cpu_min_value: int = pd.Field(100, ge=0)  # in millicores
+    memory_min_value: int = pd.Field(100, ge=0)  # in megabytes
 
     # Prometheus Settings
     prometheus_url: Optional[str] = pd.Field(None)
