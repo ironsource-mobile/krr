@@ -5,12 +5,21 @@ import sys, os
 from slack_sdk import WebClient
 import warnings
 
+from concurrent.futures import ThreadPoolExecutor
+
 from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult
 from robusta_krr.core.integrations.kubernetes import KubernetesLoader
 from robusta_krr.core.integrations.prometheus import ClusterNotSpecifiedException, MetricsLoader, PrometheusNotFound
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData
-from robusta_krr.core.models.result import MetricsData, ResourceAllocations, ResourceScan, ResourceType, Result
+from robusta_krr.core.models.result import (
+    MetricsData,
+    ResourceAllocations,
+    ResourceScan,
+    ResourceType,
+    Result,
+    StrategyData,
+)
 from robusta_krr.utils.configurable import Configurable
 from robusta_krr.utils.logo import ASCII_LOGO
 from robusta_krr.utils.progress_bar import ProgressBar
@@ -26,6 +35,9 @@ class Runner(Configurable):
         self._metrics_service_loaders: dict[Optional[str], Union[MetricsLoader, Exception]] = {}
         self._metrics_service_loaders_error_logged: set[Exception] = set()
         self._strategy = self.config.create_strategy()
+
+        # This executor will be running calculations for recommendations
+        self._executor = ThreadPoolExecutor(self.config.max_workers)
 
     def _get_prometheus_loader(self, cluster: Optional[str]) -> Optional[MetricsLoader]:
         if cluster not in self._metrics_service_loaders:
@@ -110,6 +122,7 @@ class Runner(Configurable):
             resource: ResourceRecommendation(
                 request=self._round_value(recommendation.request, resource),
                 limit=self._round_value(recommendation.limit, resource),
+                info=recommendation.info,
             )
             for resource, recommendation in result.items()
         }
@@ -138,7 +151,8 @@ class Runner(Configurable):
 
         # NOTE: We run this in a threadpool as the strategy calculation might be CPU intensive
         # But keep in mind that numpy calcluations will not block the GIL
-        result = await asyncio.to_thread(self._strategy.run, data, object)
+        loop = asyncio.get_running_loop()
+        result = await loop.run_in_executor(self._executor, self._strategy.run, data, object)
         return self._format_result(result), metrics
 
     async def _gather_objects_recommendations(
@@ -153,6 +167,7 @@ class Runner(Configurable):
                 ResourceAllocations(
                     requests={resource: recommendation[resource].request for resource in ResourceType},
                     limits={resource: recommendation[resource].limit for resource in ResourceType},
+                    info={resource: recommendation[resource].info for resource in ResourceType},
                 ),
                 metric,
             )
@@ -176,7 +191,10 @@ class Runner(Configurable):
             self.warning("Try to change the filters or check if there is anything available.")
             if self.config.namespaces == "*":
                 self.warning("Note that you are using the '*' namespace filter, which by default excludes kube-system.")
-            return Result(scans=[])
+            return Result(
+                scans=[],
+                strategy=StrategyData(name=str(self._strategy).lower(), settings=self._strategy.settings.dict()),
+            )
 
         with ProgressBar(self.config, total=len(objects), title="Calculating Recommendation") as self.__progressbar:
             resource_recommendations = await self._gather_objects_recommendations(objects)
@@ -187,6 +205,10 @@ class Runner(Configurable):
                 for obj, (recommended, metrics) in zip(objects, resource_recommendations)
             ],
             description=self._strategy.description,
+            strategy=StrategyData(
+                name=str(self._strategy).lower(),
+                settings=self._strategy.settings.dict(),
+            ),
         )
 
     async def run(self) -> None:
