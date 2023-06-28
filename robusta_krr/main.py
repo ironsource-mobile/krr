@@ -110,6 +110,7 @@ def load_commands() -> None:
                 log_to_stderr: bool = typer.Option(False, "--logtostderr", help="Pass logs to stderr", rich_help_panel="Logging Settings"),
                 file_output: Optional[str] = typer.Option(None, "--fileoutput", help="Print to file", rich_help_panel="Output Settings"),
                 slack_output: Optional[str] = typer.Option(None, "--slackoutput", help="Send to slack", rich_help_panel="Output Settings"),
+                deployments_only: bool = typer.Option(False, "--deploymentsonly", help="ignore jobs and all", rich_help_panel="Output Settings"),
                 {strategy_settings},
             ) -> None:
                 '''Run KRR using the `{func_name}` strategy'''
@@ -129,6 +130,7 @@ def load_commands() -> None:
                     log_to_stderr=log_to_stderr,
                     file_output=file_output,
                     slack_output=slack_output,
+                    deployments_only=deployments_only,
                     strategy="{func_name}",
                     other_args={strategy_args},
                 )

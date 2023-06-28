@@ -48,12 +48,19 @@ class ClusterLoader(Configurable):
         self.debug(f"Namespaces: {self.config.namespaces}")
 
         try:
-            objects_tuple = await asyncio.gather(
-                self._list_deployments(),
-                self._list_rollouts(),
-                self._list_all_statefulsets(),
-                self._list_all_daemon_set(),
-                self._list_all_jobs(),
+            if (self.config.deployments_only):
+                self.debug("Listing Only Deployments/Rollouts.")
+                objects_tuple = await asyncio.gather(
+                    self._list_deployments(),
+                    self._list_rollouts(),
+                )
+            else:
+                objects_tuple = await asyncio.gather(
+                    self._list_deployments(),
+                    self._list_rollouts(),
+                    self._list_all_statefulsets(),
+                    self._list_all_daemon_set(),
+                    self._list_all_jobs(),
             )
 
         except Exception as e:

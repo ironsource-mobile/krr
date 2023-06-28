@@ -36,6 +36,7 @@ class Config(pd.BaseSettings):
     # Outputs Settings
     file_output: Optional[str] = pd.Field(None)
     slack_output: Optional[str] = pd.Field(None)
+    deployments_only: Optional[str] = pd.Field(None)
 
     other_args: dict[str, Any]
 
