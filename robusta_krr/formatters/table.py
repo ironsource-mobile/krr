@@ -81,19 +81,16 @@ def table(result: Result) -> Table:
     table.add_column("Number", justify="right", no_wrap=True)
     if cluster_count > 1:
         table.add_column("Cluster", style="cyan")
-    table.add_column("Namespace", style="cyan")
-    table.add_column("Name", style="cyan")
-    table.add_column("Pods", style="cyan")
-    table.add_column("Old Pods", style="cyan")
-    table.add_column("Type", style="cyan")
-    table.add_column("Container", style="cyan")
+    table.add_column("Name", style="cyan", no_wrap=True)
+    table.add_column("Pods", style="cyan", no_wrap=True)
+    table.add_column("Container", style="cyan", no_wrap=True)
     for resource in ResourceType:
         table.add_column(f"{resource.name} Diff")
         table.add_column(f"{resource.name} Requests")
         table.add_column(f"{resource.name} Limits")
 
     for _, group in itertools.groupby(
-        enumerate(result.scans), key=lambda x: (x[1].object.cluster, x[1].object.namespace, x[1].object.name)
+        enumerate(result.scans), key=lambda x: (x[1].object.cluster, x[1].object.namespace, x[1].object.pods, x[1].object.current_pods_count)
     ):
         group_items = list(group)
 
@@ -105,11 +102,8 @@ def table(result: Result) -> Table:
             if cluster_count > 1:
                 cells.append(item.object.cluster if full_info_row else "")
             cells += [
-                item.object.namespace if full_info_row else "",
                 item.object.name if full_info_row else "",
                 f"{item.object.current_pods_count}" if full_info_row else "",
-                f"{item.object.deleted_pods_count}" if full_info_row else "",
-                item.object.kind if full_info_row else "",
                 item.object.container,
             ]
 
