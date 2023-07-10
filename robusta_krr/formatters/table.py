@@ -89,10 +89,17 @@ def table(result: Result) -> Table:
         table.add_column(f"{resource.name} Requests")
         table.add_column(f"{resource.name} Limits")
 
+    result.scans.sort(key=lambda x: (x.object.current_pods_count, x.object.cluster, x.object.namespace, x.object.name), reverse=True)
+
     for _, group in itertools.groupby(
-        enumerate(result.scans), key=lambda x: (x[1].object.cluster, x[1].object.namespace, x[1].object.pods, x[1].object.current_pods_count)
+        enumerate(result.scans), key=lambda x: (x[1].object.cluster, x[1].object.namespace, x[1].object.name)
     ):
         group_items = list(group)
+
+
+# my_enumerate = lambda x: [(i, x[i]) for i in xrange(len(x))]
+# a = ["a", "b", "c", "a", "b", "c"]
+# print my_enumerate(a)
 
         for j, (i, item) in enumerate(group_items):
             last_row = j == len(group_items) - 1
