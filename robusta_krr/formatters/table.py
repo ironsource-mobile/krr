@@ -96,11 +96,6 @@ def table(result: Result) -> Table:
     ):
         group_items = list(group)
 
-
-# my_enumerate = lambda x: [(i, x[i]) for i in xrange(len(x))]
-# a = ["a", "b", "c", "a", "b", "c"]
-# print my_enumerate(a)
-
         for j, (i, item) in enumerate(group_items):
             last_row = j == len(group_items) - 1
             full_info_row = j == 0
