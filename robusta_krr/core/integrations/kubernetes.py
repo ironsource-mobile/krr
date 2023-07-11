@@ -58,6 +58,7 @@ class ClusterLoader(Configurable):
         self.debug(f"Namespaces: {self.config.namespaces}")
 
         try:
+            self.__hpa_list = await self.__list_hpa()
             if (self.config.deployments_only):
                 self.debug("Listing Only Deployments/Rollouts.")
                 objects_tuple = await asyncio.gather(
@@ -156,6 +157,7 @@ class ClusterLoader(Configurable):
         )
 
     async def _list_rollouts(self) -> list[K8sObjectData]:
+        return []
         ret: V1DeploymentList = await asyncio.to_thread(self.rollout.list_rollout_for_all_namespaces, watch=False)
         self.debug(f"Found {len(ret.items)} rollouts in {self.cluster}")
 
