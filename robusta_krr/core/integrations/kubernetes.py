@@ -58,6 +58,7 @@ class ClusterLoader(Configurable):
         self.debug(f"Namespaces: {self.config.namespaces}")
 
         try:
+            self.__hpa_list = await self.__list_hpa()
             if (self.config.deployments_only):
                 self.debug("Listing Only Deployments/Rollouts.")
                 objects_tuple = await asyncio.gather(
