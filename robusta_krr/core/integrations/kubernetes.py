@@ -3,6 +3,7 @@ import itertools
 from typing import Optional, Union
 
 from kubernetes import client, config  # type: ignore
+from kubernetes.client import ApiException
 from kubernetes.client.models import (
     V1Container,
     V1DaemonSet,
@@ -132,7 +133,14 @@ class ClusterLoader(Configurable):
         )
 
     async def _list_rollouts(self) -> list[K8sObjectData]:
-        ret: V1DeploymentList = await asyncio.to_thread(self.rollout.list_rollout_for_all_namespaces, watch=False)
+        try:
+            ret: V1DeploymentList = await asyncio.to_thread(self.rollout.list_rollout_for_all_namespaces, watch=False)
+        except ApiException as e:
+            if e.status == 404:
+                self.debug(f"Rollouts not supported in {self.cluster}")
+                return []
+            raise
+
         self.debug(f"Found {len(ret.items)} rollouts in {self.cluster}")
 
         return await asyncio.gather(
