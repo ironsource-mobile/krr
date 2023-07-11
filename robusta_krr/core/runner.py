@@ -1,11 +1,11 @@
 import asyncio
 import math
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Union
 import sys, os
 from slack_sdk import WebClient
 import warnings
 
-from concurrent.futures import ThreadPoolExecutor
 
 from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult
 from robusta_krr.core.integrations.kubernetes import KubernetesLoader
@@ -68,7 +68,7 @@ class Runner(Configurable):
         Formatter = self.config.Formatter
         formatted = result.format(Formatter)
         self.echo("\n", no_prefix=True)
-        self.print_result(formatted, rich=Formatter.__rich_console__)
+        self.print_result(formatted, rich=getattr(Formatter, "__rich_console__", False))
         if (self.config.file_output) or (self.config.slack_output):
             if self.config.file_output:
                 file_name = self.config.file_output
@@ -226,5 +226,5 @@ class Runner(Configurable):
             self._process_result(result)
         except ClusterNotSpecifiedException as e:
             self.error(e)
-        except Exception as e:
+        except Exception:
             self.console.print_exception(extra_lines=1, max_frames=10)
