@@ -157,7 +157,6 @@ class ClusterLoader(Configurable):
         )
 
     async def _list_rollouts(self) -> list[K8sObjectData]:
-        return []
         ret: V1DeploymentList = await asyncio.to_thread(self.rollout.list_rollout_for_all_namespaces, watch=False)
         self.debug(f"Found {len(ret.items)} rollouts in {self.cluster}")
 
