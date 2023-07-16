@@ -26,6 +26,7 @@ from kubernetes.client.models import (
 from robusta_krr.core.models.objects import HPAData, K8sObjectData, PodData
 from robusta_krr.core.models.result import ResourceAllocations
 from robusta_krr.utils.configurable import Configurable
+from robusta_krr.core.integrations.rollout import RolloutAppsV1Api
 
 
 from .rollout import RolloutAppsV1Api
@@ -65,12 +66,20 @@ class ClusterLoader(Configurable):
 
         try:
             self.__hpa_list = await self.__list_hpa()
-            objects_tuple = await asyncio.gather(
-                self._list_deployments(),
-                self._list_rollouts(),
-                self._list_all_statefulsets(),
-                self._list_all_daemon_set(),
-                self._list_all_jobs(),
+
+            if (self.config.deployments_only):
+                self.debug("Listing Only Deployments/Rollouts.")
+                objects_tuple = await asyncio.gather(
+                    self._list_deployments(),
+                    self._list_rollouts(),
+                )
+            else:
+                objects_tuple = await asyncio.gather(
+                    self._list_deployments(),
+                    self._list_rollouts(),
+                    self._list_all_statefulsets(),
+                    self._list_all_daemon_set(),
+                    self._list_all_jobs(),
             )
 
         except Exception as e:

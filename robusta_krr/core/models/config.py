@@ -19,8 +19,8 @@ class Config(pd.BaseSettings):
     selector: Optional[str] = None
 
     # Value settings
-    cpu_min_value: int = pd.Field(5, ge=0)  # in millicores
-    memory_min_value: int = pd.Field(10, ge=0)  # in megabytes
+    cpu_min_value: int = pd.Field(100, ge=0)  # in millicores
+    memory_min_value: int = pd.Field(100, ge=0)  # in megabytes
 
     # Prometheus Settings
     prometheus_url: Optional[str] = pd.Field(None)
@@ -36,6 +36,11 @@ class Config(pd.BaseSettings):
     format: str
     strategy: str
     log_to_stderr: bool
+
+    # Outputs Settings
+    file_output: Optional[str] = pd.Field(None)
+    slack_output: Optional[str] = pd.Field(None)
+    deployments_only: Optional[str] = pd.Field(None)
 
     other_args: dict[str, Any]
 
